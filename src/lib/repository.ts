@@ -51,6 +51,10 @@ function databaseEnabled() {
   return process.env.ASYL_USE_DATABASE === "true";
 }
 
+function canPersistDemoStore() {
+  return process.env.VERCEL !== "1";
+}
+
 async function getPrisma() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required when ASYL_USE_DATABASE=true");
@@ -129,6 +133,10 @@ function reviveStore(value: Store): Store {
 }
 
 function readStoreFromDisk() {
+  if (!canPersistDemoStore()) {
+    return null;
+  }
+
   if (!existsSync(demoStorePath)) {
     return null;
   }
@@ -142,6 +150,10 @@ function readStoreFromDisk() {
 }
 
 function persistStore(data: Store) {
+  if (!canPersistDemoStore()) {
+    return;
+  }
+
   mkdirSync(path.dirname(demoStorePath), { recursive: true });
   writeFileSync(demoStorePath, JSON.stringify(data, null, 2), "utf8");
 }
