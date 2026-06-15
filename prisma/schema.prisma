@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SELLER
+  ADMIN
+}
+
+enum SellerType {
+  FARM
+  INDIVIDUAL
+}
+
+enum Species {
+  CATTLE
+  HORSE
+  SHEEP
+  GOAT
+  CAMEL
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  MIXED
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  SOLD
+  ARCHIVED
+}
+
+model User {
+  id           String         @id @default(cuid())
+  phone        String         @unique
+  passwordHash String
+  role         Role           @default(SELLER)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  seller       SellerProfile?
+  reviews      ModerationLog[] @relation("ModeratorLogs")
+}
+
+model SellerProfile {
+  id            String     @id @default(cuid())
+  userId        String     @unique
+  type          SellerType @default(FARM)
+  farmName      String
+  displayName   String
+  region        String
+  district      String
+  village       String?
+  avatarUrl     String?
+  coverUrl      String?
+  bio           String?
+  publicPhone   String
+  whatsapp      String?
+  verified      Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings      Listing[]
+}
+
+model Listing {
+  id                String          @id @default(cuid())
+  sellerId          String
+  title             String
+  species           Species
+  breed             String
+  sex               Sex
+  ageMonths         Int
+  weightKg          Int?
+  priceKzt          Int
+  negotiable        Boolean         @default(false)
+  description       String
+  region            String
+  district          String
+  village           String?
+  documents         String?
+  vaccinationNotes  String?
+  status            ListingStatus   @default(DRAFT)
+  rejectionReason   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  approvedAt        DateTime?
+  seller            SellerProfile   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  photos            ListingPhoto[]
+  moderationLogs    ModerationLog[]
+
+  @@index([status, createdAt])
+  @@index([species, region])
+}
+
+model ListingPhoto {
+  id        String  @id @default(cuid())
+  listingId String
+  url       String
+  alt       String?
+  position  Int     @default(0)
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model ModerationLog {
+  id          String        @id @default(cuid())
+  listingId   String
+  moderatorId String
+  status      ListingStatus
+  reason      String?
+  createdAt   DateTime      @default(now())
+  listing     Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  moderator   User          @relation("ModeratorLogs", fields: [moderatorId], references: [id])
+}

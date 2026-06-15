@@ -1,0 +1,9 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { pickLocale } from "@/lib/i18n";
+
+export default async function Home() {
+  const headerStore = await headers();
+  redirect(`/${pickLocale(headerStore.get("accept-language"))}`);
+}
